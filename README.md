@@ -111,6 +111,14 @@ graph LR
 - Introduce maker/checker workload balancing based on domain expertise
 - Harden RLS policies and introduce service-role functions for scheduled jobs
 
+## System Design Roadmap
+- Data plane: stage nightly ETL from core banking into warehouse targets (Snowflake, BigQuery) via Fivetran or Singer connectors, model settlement metrics with dbt, and stream CDC updates into Supabase for near real-time dashboards
+- Compute: introduce background workers (BullMQ, Temporal, Supabase Edge Functions) for policy re-scoring, document OCR, ledger postings, and SLA-driven bulk approvals
+- Scheduling: align Vercel Cron or Supabase Scheduled Functions with operational cutoffs for FX refresh, reconciliation, key rotation, and stale draft cleanup
+- Eventing: publish transaction domain events to Kafka or Redpanda topics feeding AML screening, alerting, and downstream analytics pipelines
+- Observability: wire Sentry, Datadog, and Grafana dashboards for latency, queue depth, risk rule drift, and policy breach alerts with automated escalation playbooks
+- Reference the scalable architecture workbook in [docs/system-design.drawio](docs/system-design.drawio) for current vs planned topologies and flow diagrams
+
 ## Operations
 - Environment promotion: mirror Supabase schema via SQL scripts or pg_dump
 - Deployment: optimized for Vercel; configure environment variables per environment
