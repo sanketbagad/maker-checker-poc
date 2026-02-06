@@ -16,6 +16,7 @@ import {
   History,
   Settings,
   Ban,
+  UserCheck,
 } from 'lucide-react';
 
 // Navigation configuration
@@ -27,6 +28,7 @@ const NAV_ICONS = {
   History,
   Settings,
   Ban,
+  UserCheck,
 } as const;
 
 const MAKER_NAV_ITEMS = [
@@ -38,6 +40,7 @@ const MAKER_NAV_ITEMS = [
 const CHECKER_NAV_ITEMS = [
   { href: '/dashboard/checker', label: 'Dashboard', icon: 'LayoutDashboard' },
   { href: '/dashboard/checker/pending', label: 'Pending Review', icon: 'FileText' },
+  { href: '/dashboard/checker/kyc', label: 'KYC Review', icon: 'UserCheck' },
   { href: '/dashboard/checker/flagged', label: 'Flagged', icon: 'AlertTriangle' },
   { href: '/dashboard/checker/blacklist', label: 'Blacklist', icon: 'Ban' },
 ] as const;

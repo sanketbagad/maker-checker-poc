@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Shield, Mail, ArrowRight } from 'lucide-react';
+import { Shield, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export default function SignUpSuccessPage() {
   return (
@@ -19,22 +19,26 @@ export default function SignUpSuccessPage() {
         
         <Card className="border-border">
           <CardHeader className="space-y-1 text-center">
-            <div className="mx-auto p-3 rounded-full bg-success/10 w-fit mb-2">
-              <Mail className="h-8 w-8 text-success" />
+            <div className="mx-auto p-3 rounded-full bg-green-500/10 w-fit mb-2">
+              <CheckCircle2 className="h-8 w-8 text-green-500" />
             </div>
-            <CardTitle className="text-xl">Check your email</CardTitle>
+            <CardTitle className="text-xl">Account Created Successfully!</CardTitle>
             <CardDescription>
-              {"We've sent you a confirmation link to verify your account"}
+              Your account has been verified and created
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-sm text-muted-foreground">
-              Click the link in your email to activate your account. Once verified, you can sign in and start using the system.
+              You can now sign in and complete your KYC verification to start using the banking control system.
             </p>
-            <div className="p-4 bg-muted rounded-lg">
-              <p className="text-xs text-muted-foreground">
-                {"Didn't receive the email? Check your spam folder or request a new confirmation link."}
-              </p>
+            <div className="p-4 bg-muted rounded-lg space-y-2">
+              <p className="text-xs font-medium">Next Steps:</p>
+              <ol className="text-xs text-muted-foreground text-left list-decimal list-inside space-y-1">
+                <li>Sign in to your account</li>
+                <li>Complete KYC verification</li>
+                <li>Wait for approval from checker</li>
+                <li>Start creating transactions</li>
+              </ol>
             </div>
           </CardContent>
           <CardFooter>

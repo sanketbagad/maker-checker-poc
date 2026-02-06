@@ -113,6 +113,7 @@ export const MAKER_NAV_ITEMS = [
 export const CHECKER_NAV_ITEMS = [
   { href: '/dashboard/checker', label: 'Dashboard', icon: 'LayoutDashboard' },
   { href: '/dashboard/checker/pending', label: 'Pending Review', icon: 'FileText' },
+  { href: '/dashboard/checker/kyc', label: 'KYC Review', icon: 'UserCheck' },
   { href: '/dashboard/checker/flagged', label: 'Flagged', icon: 'AlertTriangle' },
   { href: '/dashboard/checker/blacklist', label: 'Blacklist', icon: 'Ban' },
 ] as const;
@@ -135,4 +136,70 @@ export const TABLES = {
   POLICY_VIOLATIONS: 'policy_violations',
   BLACKLIST: 'blacklist',
   AUDIT_LOGS: 'audit_logs',
+  KYC_APPLICATIONS: 'kyc_applications',
 } as const;
+
+// KYC Status
+export const KYC_STATUS = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+  UNDER_REVIEW: 'under_review',
+} as const;
+
+export const KYC_STATUS_LABELS: Record<string, string> = {
+  [KYC_STATUS.PENDING]: 'Pending Review',
+  [KYC_STATUS.APPROVED]: 'Approved',
+  [KYC_STATUS.REJECTED]: 'Rejected',
+  [KYC_STATUS.UNDER_REVIEW]: 'Under Review',
+};
+
+export const KYC_STATUS_COLORS: Record<string, string> = {
+  [KYC_STATUS.PENDING]: 'bg-warning/10 text-warning-foreground border-warning/20',
+  [KYC_STATUS.APPROVED]: 'bg-success/10 text-success border-success/20',
+  [KYC_STATUS.REJECTED]: 'bg-destructive/10 text-destructive border-destructive/20',
+  [KYC_STATUS.UNDER_REVIEW]: 'bg-primary/10 text-primary border-primary/20',
+};
+
+// Account Types
+export const ACCOUNT_TYPES = {
+  SAVINGS: 'savings',
+  CURRENT: 'current',
+  SALARY: 'salary',
+} as const;
+
+export const ACCOUNT_TYPE_OPTIONS = [
+  { value: ACCOUNT_TYPES.SAVINGS, label: 'Savings Account' },
+  { value: ACCOUNT_TYPES.CURRENT, label: 'Current Account' },
+  { value: ACCOUNT_TYPES.SALARY, label: 'Salary Account' },
+] as const;
+
+// Annual Income Options
+export const ANNUAL_INCOME_OPTIONS = [
+  { value: 'below_2.5L', label: 'Below ₹2.5 Lakhs' },
+  { value: '2.5L_5L', label: '₹2.5 - 5 Lakhs' },
+  { value: '5L_10L', label: '₹5 - 10 Lakhs' },
+  { value: '10L_25L', label: '₹10 - 25 Lakhs' },
+  { value: '25L_50L', label: '₹25 - 50 Lakhs' },
+  { value: 'above_50L', label: 'Above ₹50 Lakhs' },
+] as const;
+
+// Nominee Relations
+export const NOMINEE_RELATION_OPTIONS = [
+  { value: 'spouse', label: 'Spouse' },
+  { value: 'father', label: 'Father' },
+  { value: 'mother', label: 'Mother' },
+  { value: 'son', label: 'Son' },
+  { value: 'daughter', label: 'Daughter' },
+  { value: 'brother', label: 'Brother' },
+  { value: 'sister', label: 'Sister' },
+  { value: 'other', label: 'Other' },
+] as const;
+
+// KYC Onboarding Steps
+export const KYC_STEPS = [
+  { id: 1, title: 'Personal Information', description: 'Basic details and identity' },
+  { id: 2, title: 'Contact Details', description: 'Phone, email and address' },
+  { id: 3, title: 'Employment & Account', description: 'Work and account type' },
+  { id: 4, title: 'Nominee Details', description: 'Nominee information' },
+] as const;

@@ -1,30 +1,132 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { signUp } from '@/app/auth/actions';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Shield, Loader2, PenTool, CheckCircle } from 'lucide-react';
+import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
+import { Shield, Loader2, Mail, ArrowLeft, CheckCircle2, User } from 'lucide-react';
+
+type Step = 'details' | 'otp' | 'success';
 
 export default function SignUpPage() {
+  const router = useRouter();
+  const [step, setStep] = useState<Step>('details');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<string>('maker');
+  const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [devOtp, setDevOtp] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(0);
+  const [canResend, setCanResend] = useState(false);
 
-  async function handleSubmit(formData: FormData) {
+  // Countdown timer for resend
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (step === 'otp') {
+      setCanResend(true);
+    }
+  }, [countdown, step]);
+
+  async function handleSendOTP(e?: React.FormEvent) {
+    e?.preventDefault();
     setIsLoading(true);
     setError(null);
-    
-    const result = await signUp(formData);
-    
-    if (result?.error) {
-      setError(result.error);
+
+    try {
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, firstName, lastName, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to send OTP');
+        setIsLoading(false);
+        return;
+      }
+
+      // In development, show the OTP for testing
+      if (data.devOtp) {
+        setDevOtp(data.devOtp);
+      }
+
+      setStep('otp');
+      setCountdown(data.expiresIn || 300);
+      setCanResend(false);
+    } catch {
+      setError('Failed to send OTP. Please try again.');
+    } finally {
       setIsLoading(false);
     }
+  }
+
+  async function handleVerifyOTP() {
+    if (otp.length !== 6) {
+      setError('Please enter the complete 6-digit OTP');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to verify OTP');
+        setIsLoading(false);
+        return;
+      }
+
+      setStep('success');
+      
+      // Store user data in sessionStorage for onboarding to pick up
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('registration_data', JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+        }));
+      }
+      
+      // Redirect after short delay
+      setTimeout(() => {
+        router.push(data.redirectTo || '/auth/onboarding');
+      }, 1500);
+    } catch {
+      setError('Failed to verify OTP. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleResendOTP() {
+    setOtp('');
+    setCanResend(false);
+    await handleSendOTP();
+  }
+
+  function formatTime(seconds: number) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
   return (
@@ -41,121 +143,212 @@ export default function SignUpPage() {
         </div>
         
         <Card className="border-border">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-xl">Create an account</CardTitle>
-            <CardDescription>
-              Choose your role and create your account
-            </CardDescription>
-          </CardHeader>
-          <form action={handleSubmit}>
-            <CardContent className="space-y-6">
-              {error && (
-                <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
-                  {error}
-                </div>
-              )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  name="fullName"
-                  type="text"
-                  placeholder="John Smith"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="Create a strong password"
-                  required
-                  minLength={6}
-                  disabled={isLoading}
-                />
-              </div>
-              
-              <div className="space-y-3">
-                <Label>Select your role</Label>
-                <RadioGroup
-                  value={selectedRole}
-                  onValueChange={setSelectedRole}
-                  className="grid grid-cols-2 gap-4"
+          {step === 'details' && (
+            <>
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-xl">Create a Maker account</CardTitle>
+                <CardDescription>
+                  Register to create and submit transactions
+                </CardDescription>
+              </CardHeader>
+              <form onSubmit={handleSendOTP}>
+                <CardContent className="space-y-6">
+                  {error && (
+                    <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
+                      {error}
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">First Name</Label>
+                      <Input
+                        id="firstName"
+                        type="text"
+                        placeholder="John"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        type="text"
+                        placeholder="Smith"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Create a strong password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      disabled={isLoading}
+                    />
+                    <p className="text-xs text-muted-foreground">Must be at least 6 characters</p>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex flex-col gap-4">
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending OTP...
+                      </>
+                    ) : (
+                      <>
+                        <User className="mr-2 h-4 w-4" />
+                        Register Here 
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-sm text-center text-muted-foreground">
+                    Already have an account?{' '}
+                    <Link href="/auth/login" className="text-primary hover:underline">
+                      Sign in
+                    </Link>
+                  </p>
+                </CardFooter>
+              </form>
+            </>
+          )}
+
+          {step === 'otp' && (
+            <>
+              <CardHeader className="space-y-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-fit -ml-2 mb-2"
+                  onClick={() => {
+                    setStep('details');
+                    setOtp('');
+                    setError(null);
+                  }}
                 >
-                  <div>
-                    <RadioGroupItem
-                      value="maker"
-                      id="maker"
-                      className="peer sr-only"
-                    />
-                    <Label
-                      htmlFor="maker"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-card p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer transition-colors"
-                    >
-                      <PenTool className="mb-2 h-6 w-6" />
-                      <span className="font-medium">Maker</span>
-                      <span className="text-xs text-muted-foreground text-center mt-1">
-                        Create transactions
-                      </span>
-                    </Label>
+                  <ArrowLeft className="mr-1 h-4 w-4" />
+                  Back
+                </Button>
+                <CardTitle className="text-xl">Verify your email</CardTitle>
+                <CardDescription>
+                  We&apos;ve sent a 6-digit code to <strong>{email}</strong>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {error && (
+                  <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
+                    {error}
                   </div>
-                  <div>
-                    <RadioGroupItem
-                      value="checker"
-                      id="checker"
-                      className="peer sr-only"
-                    />
-                    <Label
-                      htmlFor="checker"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-card p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary cursor-pointer transition-colors"
-                    >
-                      <CheckCircle className="mb-2 h-6 w-6" />
-                      <span className="font-medium">Checker</span>
-                      <span className="text-xs text-muted-foreground text-center mt-1">
-                        Approve transactions
-                      </span>
-                    </Label>
-                  </div>
-                </RadioGroup>
-                <input type="hidden" name="role" value={selectedRole} />
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating account...
-                  </>
-                ) : (
-                  'Create account'
                 )}
-              </Button>
-              <p className="text-sm text-center text-muted-foreground">
-                Already have an account?{' '}
-                <Link href="/auth/login" className="text-primary hover:underline">
-                  Sign in
-                </Link>
-              </p>
-            </CardFooter>
-          </form>
+
+                {/* Dev mode OTP display */}
+                {devOtp && (
+                  <div className="p-3 text-sm bg-yellow-500/10 border border-yellow-500/20 rounded-md">
+                    <p className="font-medium text-yellow-600 dark:text-yellow-400">Development Mode</p>
+                    <p className="text-muted-foreground">Your OTP is: <span className="font-mono font-bold">{devOtp}</span></p>
+                  </div>
+                )}
+                
+                <div className="flex flex-col items-center gap-4">
+                  <InputOTP
+                    maxLength={6}
+                    value={otp}
+                    onChange={setOtp}
+                    disabled={isLoading}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                    </InputOTPGroup>
+                    <InputOTPSeparator />
+                    <InputOTPGroup>
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+
+                  {countdown > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Code expires in <span className="font-medium">{formatTime(countdown)}</span>
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-4">
+                <Button
+                  type="button"
+                  className="w-full"
+                  disabled={isLoading || otp.length !== 6}
+                  onClick={handleVerifyOTP}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    'Verify & Create Account'
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  disabled={!canResend || isLoading}
+                  onClick={handleResendOTP}
+                >
+                  {canResend ? 'Resend OTP' : `Resend in ${formatTime(countdown)}`}
+                </Button>
+              </CardFooter>
+            </>
+          )}
+
+          {step === 'success' && (
+            <>
+              <CardHeader className="space-y-1">
+                <div className="flex justify-center mb-4">
+                  <div className="p-3 rounded-full bg-green-500/10">
+                    <CheckCircle2 className="h-12 w-12 text-green-500" />
+                  </div>
+                </div>
+                <CardTitle className="text-xl text-center">Account Created!</CardTitle>
+                <CardDescription className="text-center">
+                  Your account has been verified successfully. Redirecting to onboarding...
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </CardContent>
+            </>
+          )}
         </Card>
         
         <p className="text-xs text-center text-muted-foreground mt-6">

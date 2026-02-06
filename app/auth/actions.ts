@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import type { UserRole } from '@/lib/types';
+import { UserType, type UserRole } from '@/lib/types';
 
 export async function signUp(formData: FormData) {
   const supabase = await createClient();
@@ -10,7 +10,8 @@ export async function signUp(formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const fullName = formData.get('fullName') as string;
-  const role = formData.get('role') as UserRole;
+  // Registration is only for makers - checkers and admins are created by admin
+  const role = UserType.MAKER;
 
   const { error } = await supabase.auth.signUp({
     email,
@@ -51,7 +52,34 @@ export async function signIn(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   const role = user?.user_metadata?.role as UserRole || 'maker';
 
-  redirect(role === 'checker' ? '/dashboard/checker' : '/dashboard/maker');
+  // For checkers and admins, redirect directly to dashboard
+  if (role === 'checker' || role === 'admin') {
+    redirect('/dashboard/checker');
+  }
+
+  // For makers, check KYC status
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('kyc_completed')
+    .eq('id', user!.id)
+    .single();
+
+  if (!profile?.kyc_completed) {
+    // Check if there's an existing KYC application
+    const { data: kycApp } = await supabase
+      .from('kyc_applications')
+      .select('kyc_status')
+      .eq('user_id', user!.id)
+      .single();
+
+    if (!kycApp) {
+      redirect('/auth/onboarding');
+    } else if (kycApp.kyc_status !== 'approved') {
+      redirect('/auth/kyc-pending');
+    }
+  }
+
+  redirect('/dashboard/maker');
 }
 
 export async function signOut() {

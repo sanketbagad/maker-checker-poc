@@ -41,15 +41,72 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (
-    // if the user is not logged in and the app path, in this case, /protected, is accessed, redirect to the login page
-    request.nextUrl.pathname.startsWith('/protected') &&
-    !user
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  const pathname = request.nextUrl.pathname
+
+  // Public routes that don't require authentication
+  const publicRoutes = ['/auth/login', '/auth/sign-up', '/auth/sign-up-success', '/auth/callback', '/auth/error', '/']
+  const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
+
+  // Auth routes for KYC flow (accessible to authenticated users without KYC)
+  const kycRoutes = ['/auth/onboarding', '/auth/kyc-pending']
+  const isKycRoute = kycRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
+
+  // API routes that should be accessible
+  const isApiRoute = pathname.startsWith('/api/')
+
+  // If no user and trying to access protected route
+  if (!user && !isPublicRoute && !isApiRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     return NextResponse.redirect(url)
+  }
+
+  // If user is logged in
+  if (user) {
+    // Redirect away from auth pages (except KYC routes) to appropriate location
+    if (isPublicRoute && pathname !== '/') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard/maker'
+      return NextResponse.redirect(url)
+    }
+
+    // Check KYC status for makers accessing dashboard
+    if (pathname.startsWith('/dashboard')) {
+      const role = user.user_metadata?.role || 'maker'
+      
+      // Only check KYC for makers, not checkers or admins
+      if (role === 'maker') {
+        // Check if user has completed KYC
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('kyc_completed')
+          .eq('id', user.id)
+          .single()
+
+        // Check if there's an existing KYC application
+        const { data: kycApp } = await supabase
+          .from('kyc_applications')
+          .select('kyc_status')
+          .eq('user_id', user.id)
+          .single()
+
+        if (!profile?.kyc_completed) {
+          const url = request.nextUrl.clone()
+          
+          if (!kycApp) {
+            // No KYC application, redirect to onboarding
+            url.pathname = '/auth/onboarding'
+          } else if (kycApp.kyc_status !== 'approved') {
+            // KYC application exists but not approved
+            url.pathname = '/auth/kyc-pending'
+          }
+          
+          if (url.pathname !== pathname) {
+            return NextResponse.redirect(url)
+          }
+        }
+      }
+    }
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.

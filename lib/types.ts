@@ -1,4 +1,10 @@
 // User Types
+export enum UserType {
+  MAKER = 'maker',
+  CHECKER = 'checker',
+  ADMIN = 'admin',
+}
+
 export type UserRole = 'maker' | 'checker' | 'admin';
 
 export type TransactionType = 'fund_transfer' | 'payment_approval' | 'account_change' | 'loan_approval';
@@ -6,6 +12,70 @@ export type TransactionType = 'fund_transfer' | 'payment_approval' | 'account_ch
 export type TransactionStatus = 'pending' | 'approved' | 'rejected' | 'flagged';
 
 export type SeverityLevel = 'low' | 'medium' | 'high' | 'critical';
+
+// KYC Types
+export type KycStatus = 'pending' | 'approved' | 'rejected' | 'under_review';
+
+export type AccountType = 'savings' | 'current' | 'salary';
+
+export type AnnualIncome = 'below_2.5L' | '2.5L_5L' | '5L_10L' | '10L_25L' | '25L_50L' | 'above_50L';
+
+export interface KycApplication {
+  id: string;
+  application_id: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  dob: string;
+  pan: string;
+  aadhaar: string;
+  account_type: AccountType;
+  identity: string | null;
+  mobile: string;
+  email: string;
+  address_current: string;
+  address_permanent: string;
+  occupation: string;
+  annual_income: AnnualIncome;
+  pep: boolean;
+  nominee_name: string | null;
+  nominee_relation: string | null;
+  nominee_dob: string | null;
+  kyc_status: KycStatus;
+  checker_id: string | null;
+  checker_notes: string | null;
+  reviewed_at: string | null;
+  balance: number;
+  available: number;
+  created_at: string;
+  updated_at: string;
+  // Relations
+  user?: Profile;
+  checker?: Profile;
+}
+
+export interface KycFormData {
+  // Step 1: Personal Information
+  first_name: string;
+  last_name: string;
+  dob: string;
+  pan: string;
+  aadhaar: string;
+  // Step 2: Contact Information
+  mobile: string;
+  email: string;
+  address_current: string;
+  address_permanent: string;
+  // Step 3: Employment & Account
+  account_type: AccountType;
+  occupation: string;
+  annual_income: AnnualIncome;
+  pep: boolean;
+  // Step 4: Nominee Information
+  nominee_name: string;
+  nominee_relation: string;
+  nominee_dob: string;
+}
 
 // Profile
 export interface Profile {
