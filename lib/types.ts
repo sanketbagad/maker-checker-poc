@@ -3,9 +3,10 @@ export enum UserType {
   MAKER = 'maker',
   CHECKER = 'checker',
   ADMIN = 'admin',
+  SUPERADMIN = 'superadmin',
 }
 
-export type UserRole = 'maker' | 'checker' | 'admin';
+export type UserRole = 'maker' | 'checker' | 'admin' | 'superadmin';
 
 export type TransactionType = 'fund_transfer' | 'payment_approval' | 'account_change' | 'loan_approval';
 
@@ -81,8 +82,10 @@ export interface KycFormData {
 export interface Profile {
   id: string;
   email: string;
-  full_name: string | null;
+  full_name: string;
   role: UserRole;
+  is_active: boolean;
+  kyc_completed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -118,7 +121,9 @@ export interface PolicyRule {
   threshold_value: number | null;
   is_active: boolean;
   description: string | null;
+  created_by: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export interface PolicyViolation {

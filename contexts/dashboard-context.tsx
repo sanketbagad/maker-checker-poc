@@ -11,6 +11,7 @@ interface DashboardContextValue {
   isMaker: boolean;
   isChecker: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   refreshData: () => void;
 }
 
@@ -29,6 +30,7 @@ export function DashboardProvider({ children, profile }: DashboardProviderProps)
   const isMaker = profile.role === USER_ROLES.MAKER;
   const isChecker = profile.role === USER_ROLES.CHECKER;
   const isAdmin = profile.role === USER_ROLES.ADMIN;
+  const isSuperAdmin = profile.role === USER_ROLES.SUPERADMIN;
 
   const refreshData = useCallback(() => {
     router.refresh();
@@ -40,9 +42,10 @@ export function DashboardProvider({ children, profile }: DashboardProviderProps)
       isMaker,
       isChecker,
       isAdmin,
+      isSuperAdmin,
       refreshData,
     }),
-    [profile, isMaker, isChecker, isAdmin, refreshData]
+    [profile, isMaker, isChecker, isAdmin, isSuperAdmin, refreshData]
   );
 
   return (
@@ -68,6 +71,6 @@ export function useProfile() {
 }
 
 export function useUserRole() {
-  const { isMaker, isChecker, isAdmin, profile } = useDashboard();
-  return { role: profile.role, isMaker, isChecker, isAdmin };
+  const { isMaker, isChecker, isAdmin, isSuperAdmin, profile } = useDashboard();
+  return { role: profile.role, isMaker, isChecker, isAdmin, isSuperAdmin };
 }

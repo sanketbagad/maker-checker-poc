@@ -17,6 +17,8 @@ import {
   Settings,
   Ban,
   UserCheck,
+  UserCog,
+  Users,
 } from 'lucide-react';
 
 // Navigation configuration
@@ -29,12 +31,15 @@ const NAV_ICONS = {
   Settings,
   Ban,
   UserCheck,
+  UserCog,
+  Users,
 } as const;
 
 const MAKER_NAV_ITEMS = [
   { href: '/dashboard/maker', label: 'Dashboard', icon: 'LayoutDashboard' },
   { href: '/dashboard/maker/transactions', label: 'My Transactions', icon: 'FileText' },
   { href: '/dashboard/maker/new', label: 'New Transaction', icon: 'CheckSquare' },
+  { href: '/dashboard/maker/kyc-update', label: 'KYC Update', icon: 'UserCog' },
 ] as const;
 
 const CHECKER_NAV_ITEMS = [
@@ -48,6 +53,14 @@ const CHECKER_NAV_ITEMS = [
 const COMMON_NAV_ITEMS = [
   { href: '/dashboard/audit', label: 'Audit Logs', icon: 'History' },
   { href: '/dashboard/policy', label: 'Policy Rules', icon: 'Settings' },
+] as const;
+
+const SUPERADMIN_NAV_ITEMS = [
+  { href: '/dashboard/admin', label: 'Dashboard', icon: 'LayoutDashboard' },
+  { href: '/dashboard/admin/users', label: 'User Management', icon: 'Users' },
+  { href: '/dashboard/admin/transactions', label: 'All Transactions', icon: 'FileText' },
+  { href: '/dashboard/admin/kyc', label: 'All KYC', icon: 'UserCheck' },
+  { href: '/dashboard/admin/blacklist', label: 'Blacklist', icon: 'Ban' },
 ] as const;
 
 interface SidebarProps {
@@ -95,7 +108,7 @@ function UserInfo({ profile }: { profile: SidebarProps['profile'] }) {
   return (
     <div className="border-t border-sidebar-border p-4">
       <div className="flex items-center gap-3 rounded-lg bg-sidebar-accent/30 px-3 py-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sidebar-primary text-sidebar-primary-foreground font-medium text-sm">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sidebar-primary to-sidebar-primary/70 text-sidebar-primary-foreground font-semibold text-sm ring-2 ring-sidebar-border shadow-sm">
           {profile.full_name.charAt(0).toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
@@ -111,9 +124,18 @@ function UserInfo({ profile }: { profile: SidebarProps['profile'] }) {
 
 export function DashboardSidebar({ profile }: SidebarProps) {
   const pathname = usePathname();
+  const isSuperAdmin = profile.role === USER_ROLES.SUPERADMIN;
   const isChecker = profile.role === USER_ROLES.CHECKER;
-  const navItems = isChecker ? CHECKER_NAV_ITEMS : MAKER_NAV_ITEMS;
-  const menuTitle = isChecker ? 'Checker Menu' : 'Maker Menu';
+  const navItems = isSuperAdmin
+    ? SUPERADMIN_NAV_ITEMS
+    : isChecker
+      ? CHECKER_NAV_ITEMS
+      : MAKER_NAV_ITEMS;
+  const menuTitle = isSuperAdmin
+    ? 'SuperAdmin Menu'
+    : isChecker
+      ? 'Checker Menu'
+      : 'Maker Menu';
 
   return (
     <aside className="fixed inset-y-0 left-0 z-50 hidden w-72 flex-col border-r border-sidebar-border bg-sidebar lg:flex">

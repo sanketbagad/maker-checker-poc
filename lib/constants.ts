@@ -40,6 +40,7 @@ export const USER_ROLES = {
   MAKER: 'maker',
   CHECKER: 'checker',
   ADMIN: 'admin',
+  SUPERADMIN: 'superadmin',
 } as const;
 
 // Policy Violation Severities
@@ -86,6 +87,9 @@ export const AUDIT_ACTIONS = {
   POLICY_UPDATED: 'POLICY_UPDATED',
   USER_LOGIN: 'USER_LOGIN',
   USER_LOGOUT: 'USER_LOGOUT',
+  USER_CREATED: 'USER_CREATED',
+  USER_ROLE_UPDATED: 'USER_ROLE_UPDATED',
+  USER_DEACTIVATED: 'USER_DEACTIVATED',
 } as const;
 
 // Business Hours Configuration
@@ -108,6 +112,7 @@ export const MAKER_NAV_ITEMS = [
   { href: '/dashboard/maker', label: 'Dashboard', icon: 'LayoutDashboard' },
   { href: '/dashboard/maker/transactions', label: 'My Transactions', icon: 'FileText' },
   { href: '/dashboard/maker/new', label: 'New Transaction', icon: 'CheckSquare' },
+  { href: '/dashboard/maker/kyc-update', label: 'KYC Update', icon: 'UserCog' },
 ] as const;
 
 export const CHECKER_NAV_ITEMS = [
@@ -116,6 +121,14 @@ export const CHECKER_NAV_ITEMS = [
   { href: '/dashboard/checker/kyc', label: 'KYC Review', icon: 'UserCheck' },
   { href: '/dashboard/checker/flagged', label: 'Flagged', icon: 'AlertTriangle' },
   { href: '/dashboard/checker/blacklist', label: 'Blacklist', icon: 'Ban' },
+] as const;
+
+export const SUPERADMIN_NAV_ITEMS = [
+  { href: '/dashboard/admin', label: 'Dashboard', icon: 'LayoutDashboard' },
+  { href: '/dashboard/admin/users', label: 'User Management', icon: 'Users' },
+  { href: '/dashboard/admin/transactions', label: 'All Transactions', icon: 'FileText' },
+  { href: '/dashboard/admin/kyc', label: 'All KYC', icon: 'UserCheck' },
+  { href: '/dashboard/admin/blacklist', label: 'Blacklist', icon: 'Ban' },
 ] as const;
 
 export const COMMON_NAV_ITEMS = [

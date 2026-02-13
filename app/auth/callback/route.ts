@@ -10,13 +10,21 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     await supabase.auth.exchangeCodeForSession(code);
     
-    // Get user role to redirect appropriately
+    // Get user role from profiles DB (source of truth)
     const { data: { user } } = await supabase.auth.getUser();
-    const role = user?.user_metadata?.role || 'maker';
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user!.id)
+      .single();
+
+    const role = profile?.role || user?.user_metadata?.role || 'maker';
+
+    let redirectPath = '/dashboard/maker';
+    if (role === 'superadmin') redirectPath = '/dashboard/admin';
+    else if (role === 'checker' || role === 'admin') redirectPath = '/dashboard/checker';
     
-    return NextResponse.redirect(
-      new URL(role === 'checker' ? '/dashboard/checker' : '/dashboard/maker', requestUrl.origin)
-    );
+    return NextResponse.redirect(new URL(redirectPath, requestUrl.origin));
   }
 
   return NextResponse.redirect(new URL('/auth/error', requestUrl.origin));

@@ -21,14 +21,22 @@ export default async function DashboardLayout({
     redirect('/auth/login');
   }
 
-  // Construct profile from user metadata
+  // Read profile from DB (source of truth for role)
+  const { data: dbProfile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
   const profile: Profile = {
     id: user.id,
-    email: user.email || '',
-    full_name: user.user_metadata?.full_name || 'User',
-    role: user.user_metadata?.role || USER_ROLES.MAKER,
-    created_at: user.created_at || new Date().toISOString(),
-    updated_at: user.updated_at || new Date().toISOString(),
+    email: dbProfile?.email || user.email || '',
+    full_name: dbProfile?.full_name || user.user_metadata?.full_name || 'User',
+    role: dbProfile?.role || user.user_metadata?.role || USER_ROLES.MAKER,
+    is_active: dbProfile?.is_active ?? true,
+    kyc_completed: dbProfile?.kyc_completed ?? false,
+    created_at: dbProfile?.created_at || user.created_at || new Date().toISOString(),
+    updated_at: dbProfile?.updated_at || user.updated_at || new Date().toISOString(),
   };
 
   return (

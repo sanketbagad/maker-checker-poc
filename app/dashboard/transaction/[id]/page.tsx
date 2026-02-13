@@ -112,8 +112,16 @@ export default async function TransactionDetailPage({
     notFound();
   }
 
-  const userRole = user.user_metadata?.role || 'maker';
-  const backUrl = userRole === 'checker' ? '/dashboard/checker' : '/dashboard/maker';
+  const { data: userProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  const userRole = userProfile?.role || 'maker';
+  const backUrl = userRole === 'superadmin' ? '/dashboard/admin/transactions'
+    : userRole === 'checker' || userRole === 'admin' ? '/dashboard/checker'
+    : '/dashboard/maker';
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

@@ -50,19 +50,25 @@ export async function signIn(formData: FormData) {
 
   // Get user role to redirect to appropriate dashboard
   const { data: { user } } = await supabase.auth.getUser();
-  const role = user?.user_metadata?.role as UserRole || 'maker';
 
-  // For checkers and admins, redirect directly to dashboard
+  // Read role from profiles table (source of truth) instead of user_metadata
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, kyc_completed')
+    .eq('id', user!.id)
+    .single();
+
+  const role = (profile?.role || user?.user_metadata?.role || 'maker') as UserRole;
+
+  // For superadmins, redirect to admin dashboard
+  if (role === 'superadmin') {
+    redirect('/dashboard/admin');
+  }
+
+  // For checkers and admins, redirect directly to checker dashboard
   if (role === 'checker' || role === 'admin') {
     redirect('/dashboard/checker');
   }
-
-  // For makers, check KYC status
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('kyc_completed')
-    .eq('id', user!.id)
-    .single();
 
   if (!profile?.kyc_completed) {
     // Check if there's an existing KYC application

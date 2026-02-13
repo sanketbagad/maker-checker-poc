@@ -54,19 +54,24 @@ export function DashboardHeader({ profile }: HeaderProps) {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground font-medium text-sm">
+          <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 ring-2 ring-border hover:ring-primary/50 transition-all">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-semibold text-sm shadow-sm">
               {profile.full_name.charAt(0).toUpperCase()}
             </div>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end" forceMount>
           <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{profile.full_name}</p>
-              <p className="text-xs leading-none text-muted-foreground">
-                {profile.email}
-              </p>
+            <div className="flex items-center gap-3 py-1">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-semibold text-sm">
+                {profile.full_name.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex flex-col space-y-1 min-w-0">
+                <p className="text-sm font-medium leading-none truncate">{profile.full_name}</p>
+                <p className="text-xs leading-none text-muted-foreground truncate">
+                  {profile.email}
+                </p>
+              </div>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />

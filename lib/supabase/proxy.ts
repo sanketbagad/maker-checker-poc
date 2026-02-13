@@ -63,34 +63,40 @@ export async function updateSession(request: NextRequest) {
 
   // If user is logged in
   if (user) {
+    // Read role from profiles table (source of truth) instead of user_metadata
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('role, kyc_completed')
+      .eq('id', user.id)
+      .single()
+
+    const role = profileData?.role || user.user_metadata?.role || 'maker'
+
     // Redirect away from auth pages (except KYC routes) to appropriate location
     if (isPublicRoute && pathname !== '/') {
       const url = request.nextUrl.clone()
-      url.pathname = '/dashboard/maker'
+      if (role === 'superadmin') {
+        url.pathname = '/dashboard/admin'
+      } else if (role === 'checker' || role === 'admin') {
+        url.pathname = '/dashboard/checker'
+      } else {
+        url.pathname = '/dashboard/maker'
+      }
       return NextResponse.redirect(url)
     }
 
     // Check KYC status for makers accessing dashboard
     if (pathname.startsWith('/dashboard')) {
-      const role = user.user_metadata?.role || 'maker'
-      
-      // Only check KYC for makers, not checkers or admins
+      // Only check KYC for makers, not checkers, admins, or superadmins
       if (role === 'maker') {
-        // Check if user has completed KYC
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('kyc_completed')
-          .eq('id', user.id)
-          .single()
+        if (!profileData?.kyc_completed) {
+          // Check if there's an existing KYC application
+          const { data: kycApp } = await supabase
+            .from('kyc_applications')
+            .select('kyc_status')
+            .eq('user_id', user.id)
+            .single()
 
-        // Check if there's an existing KYC application
-        const { data: kycApp } = await supabase
-          .from('kyc_applications')
-          .select('kyc_status')
-          .eq('user_id', user.id)
-          .single()
-
-        if (!profile?.kyc_completed) {
           const url = request.nextUrl.clone()
           
           if (!kycApp) {

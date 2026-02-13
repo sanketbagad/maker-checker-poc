@@ -23,9 +23,9 @@ export async function POST(request: Request) {
       .eq('id', user.id)
       .single();
 
-    if (!profile || !['checker', 'admin'].includes(profile.role)) {
+    if (!profile || !['checker', 'admin', 'superadmin'].includes(profile.role)) {
       return NextResponse.json(
-        { error: 'Unauthorized - Only checkers can review KYC applications' },
+        { error: 'Unauthorized - Only checkers/admins can review KYC applications' },
         { status: 403 }
       );
     }

@@ -303,7 +303,7 @@ export function SimpleTransactionTable({
   onView,
   onApprove,
   onReject,
-}: RootProps) {
+}: Omit<RootProps, 'children'>) {
   return (
     <TransactionTable.Root
       transactions={transactions}
