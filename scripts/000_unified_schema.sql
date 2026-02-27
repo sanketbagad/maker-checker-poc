@@ -34,6 +34,7 @@ CREATE TABLE public.profiles (
                 CHECK (role IN ('maker', 'checker', 'admin', 'superadmin')),
   is_active   BOOLEAN NOT NULL DEFAULT true,
   kyc_completed BOOLEAN NOT NULL DEFAULT false,
+  mfa_enabled BOOLEAN NOT NULL DEFAULT false,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );

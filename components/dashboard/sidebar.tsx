@@ -53,6 +53,7 @@ const CHECKER_NAV_ITEMS = [
 const COMMON_NAV_ITEMS = [
   { href: '/dashboard/audit', label: 'Audit Logs', icon: 'History' },
   { href: '/dashboard/policy', label: 'Policy Rules', icon: 'Settings' },
+  { href: '/dashboard/settings', label: 'Settings', icon: 'UserCog' },
 ] as const;
 
 const SUPERADMIN_NAV_ITEMS = [

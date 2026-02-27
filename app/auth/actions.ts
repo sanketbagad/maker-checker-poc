@@ -54,38 +54,62 @@ export async function signIn(formData: FormData) {
   // Read role from profiles table (source of truth) instead of user_metadata
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, kyc_completed')
+    .select('role, kyc_completed, mfa_enabled')
     .eq('id', user!.id)
     .single();
 
-  const role = (profile?.role || user?.user_metadata?.role || 'maker') as UserRole;
-
-  // For superadmins, redirect to admin dashboard
-  if (role === 'superadmin') {
-    redirect('/dashboard/admin');
+  // If MFA is enabled, don't redirect yet — return mfa_required
+  if (profile?.mfa_enabled) {
+    return { mfa_required: true };
   }
 
-  // For checkers and admins, redirect directly to checker dashboard
-  if (role === 'checker' || role === 'admin') {
-    redirect('/dashboard/checker');
+  return completeSignInRedirect(user!, profile);
+}
+
+/**
+ * After MFA verification, determine the redirect destination.
+ * Returns { redirectTo } instead of calling redirect() so the
+ * client can navigate via router.push().
+ */
+export async function completeSignIn(): Promise<{ redirectTo?: string; error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'Session expired' };
   }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, kyc_completed')
+    .eq('id', user.id)
+    .single();
+
+  return { redirectTo: await getSignInDestination(user, profile) };
+}
+
+async function getSignInDestination(
+  user: { id: string; user_metadata: Record<string, any> },
+  profile: { role: string; kyc_completed: boolean } | null
+): Promise<string> {
+  const role = (profile?.role || user.user_metadata?.role || 'maker') as UserRole;
+
+  if (role === 'superadmin') return '/dashboard/admin';
+  if (role === 'checker' || role === 'admin') return '/dashboard/checker';
 
   if (!profile?.kyc_completed) {
-    // Check if there's an existing KYC application
+    const supabase = await createClient();
     const { data: kycApp } = await supabase
       .from('kyc_applications')
       .select('kyc_status')
-      .eq('user_id', user!.id)
+      .eq('user_id', user.id)
       .single();
 
-    if (!kycApp) {
-      redirect('/auth/onboarding');
-    } else if (kycApp.kyc_status !== 'approved') {
-      redirect('/auth/kyc-pending');
-    }
+    if (!kycApp) return '/auth/onboarding';
+    if (kycApp.kyc_status !== 'approved') return '/auth/kyc-pending';
   }
 
-  redirect('/dashboard/maker');
+  return '/dashboard/maker';
 }
 
 export async function signOut() {
