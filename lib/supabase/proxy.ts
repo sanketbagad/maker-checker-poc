@@ -44,7 +44,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/auth/login', '/auth/sign-up', '/auth/sign-up-success', '/auth/callback', '/auth/error', '/']
+  const publicRoutes = ['/auth/login', '/auth/sign-up', '/auth/sign-up-success', '/auth/callback', '/auth/error', '/auth/forgot-password', '/auth/reset-password', '/']
   const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))
 
   // Auth routes for KYC flow (accessible to authenticated users without KYC)

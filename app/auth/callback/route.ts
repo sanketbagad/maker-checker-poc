@@ -9,6 +9,12 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabase = await createClient();
     await supabase.auth.exchangeCodeForSession(code);
+
+    // If a ?next= param was provided (e.g. password recovery), redirect there
+    const next = requestUrl.searchParams.get('next');
+    if (next) {
+      return NextResponse.redirect(new URL(next, requestUrl.origin));
+    }
     
     // Get user role from profiles DB (source of truth)
     const { data: { user } } = await supabase.auth.getUser();
