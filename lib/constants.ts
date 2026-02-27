@@ -150,6 +150,17 @@ export const TABLES = {
   BLACKLIST: 'blacklist',
   AUDIT_LOGS: 'audit_logs',
   KYC_APPLICATIONS: 'kyc_applications',
+  NOTIFICATIONS: 'notifications',
+} as const;
+
+// Notification Types
+export const NOTIFICATION_TYPES = {
+  INFO: 'info',
+  KYC: 'kyc',
+  TRANSACTION: 'transaction',
+  POLICY: 'policy',
+  USER: 'user',
+  SYSTEM: 'system',
 } as const;
 
 // KYC Status

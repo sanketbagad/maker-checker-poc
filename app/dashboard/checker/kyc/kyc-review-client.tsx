@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,8 +54,17 @@ function getLabel(options: readonly { value: string; label: string }[], value: s
 
 export default function KycReviewClient({ initialStats, initialApplications }: KycReviewClientProps) {
   const router = useRouter();
-  const [stats] = useState(initialStats);
+  const [stats, setStats] = useState(initialStats);
   const [applications, setApplications] = useState(initialApplications);
+
+  // Sync server props when router.refresh() re-runs the server component
+  useEffect(() => {
+    setStats(initialStats);
+  }, [initialStats]);
+
+  useEffect(() => {
+    setApplications(initialApplications);
+  }, [initialApplications]);
   const [selectedApp, setSelectedApp] = useState<KycApplication | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isActionDialogOpen, setIsActionDialogOpen] = useState(false);

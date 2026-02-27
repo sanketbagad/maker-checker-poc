@@ -9,6 +9,7 @@
 -- 0. Clean slate
 -- ============================================================================
 DROP TABLE IF EXISTS public.audit_logs CASCADE;
+DROP TABLE IF EXISTS public.notifications CASCADE;
 DROP TABLE IF EXISTS public.policy_violations CASCADE;
 DROP TABLE IF EXISTS public.blacklist CASCADE;
 DROP TABLE IF EXISTS public.policy_rules CASCADE;
@@ -192,6 +193,26 @@ CREATE INDEX idx_kyc_status ON public.kyc_applications(kyc_status);
 CREATE INDEX idx_kyc_checker ON public.kyc_applications(checker_id);
 
 -- ============================================================================
+-- 7b. NOTIFICATIONS — in-app + push notification records
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.notifications (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title       TEXT NOT NULL,
+  message     TEXT NOT NULL,
+  type        TEXT NOT NULL DEFAULT 'info'
+                CHECK (type IN ('info','kyc','transaction','policy','user','system')),
+  is_read     BOOLEAN NOT NULL DEFAULT false,
+  entity_type TEXT,
+  entity_id   TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_notifications_user     ON public.notifications(user_id);
+CREATE INDEX idx_notifications_unread   ON public.notifications(user_id, is_read) WHERE is_read = false;
+CREATE INDEX idx_notifications_created  ON public.notifications(created_at DESC);
+
+-- ============================================================================
 -- 8. ROW LEVEL SECURITY
 -- ============================================================================
 ALTER TABLE public.profiles          ENABLE ROW LEVEL SECURITY;
@@ -201,6 +222,7 @@ ALTER TABLE public.policy_violations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.blacklist         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.kyc_applications  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications     ENABLE ROW LEVEL SECURITY;
 
 -- ── helper: is the current user a privileged role? ──────────────────────────
 CREATE OR REPLACE FUNCTION public.is_privileged()
@@ -287,6 +309,19 @@ CREATE POLICY "audit_select" ON public.audit_logs
 
 CREATE POLICY "audit_insert" ON public.audit_logs
   FOR INSERT WITH CHECK (true);
+
+-- ── notifications ───────────────────────────────────────────────────────────
+CREATE POLICY "notifications_select_own" ON public.notifications
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "notifications_insert" ON public.notifications
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "notifications_update_own" ON public.notifications
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "notifications_delete_own" ON public.notifications
+  FOR DELETE USING (auth.uid() = user_id);
 
 -- ── kyc_applications ────────────────────────────────────────────────────────
 CREATE POLICY "kyc_select" ON public.kyc_applications
@@ -396,3 +431,8 @@ INSERT INTO public.blacklist (account_number, entity_name, reason, is_active) VA
 --
 -- Option B: Use the seed script (recommended):
 --   npx tsx scripts/seed-superadmin.ts
+
+-- ============================================================================
+-- 12. ENABLE REALTIME FOR NOTIFICATIONS
+-- ============================================================================
+ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;

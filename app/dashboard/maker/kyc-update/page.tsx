@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 import { TABLES } from '@/lib/constants';
 import KycUpdateClient from './kyc-update-client';
 

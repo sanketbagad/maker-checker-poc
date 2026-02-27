@@ -47,9 +47,6 @@ import {
   Users,
   Shield,
   UserCheck,
-  Copy,
-  Eye,
-  EyeOff,
 } from 'lucide-react';
 
 interface UserProfile {
@@ -104,12 +101,9 @@ export default function UserManagementClient() {
       email: string;
       full_name: string;
       role: string;
-      temporaryPassword?: string;
       email_sent: boolean;
     };
   } | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [copiedPassword, setCopiedPassword] = useState(false);
 
   const limit = 15;
 
@@ -177,18 +171,6 @@ export default function UserManagementClient() {
   const resetCreateForm = () => {
     setCreateForm({ email: '', full_name: '', role: 'checker' });
     setCreateResult(null);
-    setShowPassword(false);
-    setCopiedPassword(false);
-  };
-
-  const copyPassword = async (password: string) => {
-    try {
-      await navigator.clipboard.writeText(password);
-      setCopiedPassword(true);
-      setTimeout(() => setCopiedPassword(false), 2000);
-    } catch {
-      // Fallback
-    }
   };
 
   const totalPages = Math.ceil(totalUsers / limit);
@@ -420,47 +402,6 @@ export default function UserManagementClient() {
                     </Badge>
                   )}
                 </div>
-
-                {/* Show temp password in dev mode */}
-                {createResult.data?.temporaryPassword && (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/20 p-3 mt-2">
-                    <p className="text-xs font-medium text-amber-800 dark:text-amber-300 mb-2">
-                      Temporary Password (Dev Mode)
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 text-sm font-mono bg-white dark:bg-black/20 rounded px-2 py-1">
-                        {showPassword
-                          ? createResult.data.temporaryPassword
-                          : '••••••••••••'}
-                      </code>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() =>
-                          copyPassword(createResult.data!.temporaryPassword!)
-                        }
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {copiedPassword && (
-                      <p className="text-xs text-green-600 mt-1">Copied!</p>
-                    )}
-                  </div>
-                )}
               </div>
 
               <DialogFooter>

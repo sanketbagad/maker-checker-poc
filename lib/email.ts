@@ -14,7 +14,6 @@ interface SendCredentialsEmailParams {
 
 /**
  * Send welcome email with credentials to a newly created user (checker/admin).
- * In development mode without RESEND_API_KEY, logs to console instead.
  */
 export async function sendCredentialsEmail({
   to,
@@ -112,19 +111,6 @@ Do not share your credentials with anyone.
 This is an automated message from SecureControl Banking System.
   `.trim();
 
-  // Dev mode: log and return without sending
-  if (!process.env.RESEND_API_KEY) {
-    console.log('========================================');
-    console.log('[EMAIL] No RESEND_API_KEY set — logging credentials email:');
-    console.log(`  To: ${to}`);
-    console.log(`  Name: ${fullName}`);
-    console.log(`  Role: ${roleLabel}`);
-    console.log(`  Password: ${temporaryPassword}`);
-    console.log(`  Login URL: ${loginUrl}`);
-    console.log('========================================');
-    return { success: true, messageId: 'dev-mode-no-email-sent' };
-  }
-
   try {
     const { data, error } = await resend.emails.send({
       from: `SecureControl <${FROM_EMAIL}>`,
@@ -172,4 +158,109 @@ export function generateTemporaryPassword(length = 12): string {
     .split('')
     .sort(() => Math.random() - 0.5)
     .join('');
+}
+
+// ── OTP Email ──
+
+interface SendOTPEmailParams {
+  to: string;
+  firstName: string;
+  otp: string;
+  expiresInMinutes: number;
+}
+
+/**
+ * Send OTP verification email during user registration.
+ */
+export async function sendOTPEmail({
+  to,
+  firstName,
+  otp,
+  expiresInMinutes,
+}: SendOTPEmailParams): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f4f4f5; padding: 40px 20px;">
+      <div style="max-width: 560px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="display: inline-block; background: #1a1a2e; padding: 12px; border-radius: 12px; margin-bottom: 16px;">
+            <span style="color: white; font-size: 24px;">&#128737;</span>
+          </div>
+          <h1 style="margin: 0; color: #1a1a2e; font-size: 24px;">SecureControl</h1>
+          <p style="color: #71717a; margin-top: 8px;">Email Verification</p>
+        </div>
+
+        <p style="color: #27272a; font-size: 16px;">Hello <strong>${firstName}</strong>,</p>
+
+        <p style="color: #3f3f46; font-size: 14px; line-height: 1.6;">
+          Please use the following one-time password to verify your email address and complete your registration.
+        </p>
+
+        <div style="background: #f4f4f5; border-radius: 8px; padding: 24px; margin: 24px 0; text-align: center;">
+          <p style="margin: 0 0 8px 0; font-size: 13px; color: #71717a; text-transform: uppercase; letter-spacing: 0.5px;">Your Verification Code</p>
+          <p style="margin: 0; font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #1a1a2e; font-family: monospace;">${otp}</p>
+        </div>
+
+        <p style="color: #71717a; font-size: 13px; text-align: center;">
+          This code will expire in <strong>${expiresInMinutes} minutes</strong>.
+        </p>
+
+        <div style="background: #fef3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 16px; margin: 24px 0;">
+          <p style="margin: 0; color: #856404; font-size: 13px;">
+            &#9888;&#65039; <strong>Security Notice:</strong> Never share this code with anyone. 
+            SecureControl staff will never ask for your OTP.
+          </p>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 32px 0;">
+
+        <p style="color: #a1a1aa; font-size: 12px; text-align: center; margin: 0;">
+          This is an automated message from SecureControl Banking System.<br>
+          If you did not request this code, please ignore this email.
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const textContent = `
+SecureControl - Email Verification
+
+Hello ${firstName},
+
+Your verification code is: ${otp}
+
+This code will expire in ${expiresInMinutes} minutes.
+
+SECURITY NOTICE: Never share this code with anyone.
+
+---
+This is an automated message from SecureControl Banking System.
+If you did not request this code, please ignore this email.
+  `.trim();
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: `SecureControl <${FROM_EMAIL}>`,
+      to: [to],
+      subject: `${otp} - Your SecureControl Verification Code`,
+      html: htmlContent,
+      text: textContent,
+    });
+
+    if (error) {
+      console.error('[EMAIL] Resend error sending OTP:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, messageId: data?.id };
+  } catch (err) {
+    console.error('[EMAIL] Failed to send OTP:', err);
+    return { success: false, error: 'Failed to send OTP email' };
+  }
 }

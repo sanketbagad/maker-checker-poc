@@ -180,6 +180,19 @@ export interface TransactionFormData {
   description: string;
 }
 
+// Notification
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'kyc' | 'transaction' | 'policy' | 'user' | 'system';
+  is_read: boolean;
+  entity_type: string | null;
+  entity_id: string | null;
+  created_at: string;
+}
+
 // API Response Types
 export interface ApiResponse<T> {
   data?: T;

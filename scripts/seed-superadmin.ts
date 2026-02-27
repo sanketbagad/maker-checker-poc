@@ -15,6 +15,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
@@ -156,7 +157,44 @@ async function seedSuperAdmin() {
   console.log('   Login credentials:');
   console.log(`   Email:    ${SUPERADMIN_EMAIL}`);
   if (!existingUser) {
-    console.log(`   Password: ${SUPERADMIN_PASSWORD}`);
+    // Send credentials via email using Resend
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'noreply@securecontrol.dev';
+
+    if (resendApiKey) {
+      const resend = new Resend(resendApiKey);
+      try {
+        await resend.emails.send({
+          from: `SecureControl <${fromEmail}>`,
+          to: [SUPERADMIN_EMAIL],
+          subject: 'Welcome to SecureControl — Your SuperAdmin Account',
+          html: `
+            <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 20px;">
+              <h1 style="color: #1a1a2e;">Welcome to SecureControl</h1>
+              <p>Hello <strong>${SUPERADMIN_NAME}</strong>,</p>
+              <p>Your SuperAdmin account has been created. Use the credentials below to log in:</p>
+              <div style="background: #f4f4f5; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <p style="margin: 4px 0;"><strong>Email:</strong> ${SUPERADMIN_EMAIL}</p>
+                <p style="margin: 4px 0;"><strong>Password:</strong> <code>${SUPERADMIN_PASSWORD}</code></p>
+                <p style="margin: 4px 0;"><strong>Role:</strong> SuperAdmin</p>
+              </div>
+              <p><a href="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/login">Log In to SecureControl</a></p>
+              <p style="color: #856404; background: #fef3cd; padding: 12px; border-radius: 6px;">
+                ⚠️ Please change your password after first login. Do not share these credentials.
+              </p>
+            </div>
+          `,
+          text: `Welcome to SecureControl\n\nEmail: ${SUPERADMIN_EMAIL}\nPassword: ${SUPERADMIN_PASSWORD}\nRole: SuperAdmin\n\nPlease change your password after first login.`,
+        });
+        console.log('   Password sent to email ✉️');
+      } catch (emailErr) {
+        console.error('   ⚠️  Failed to send email:', emailErr);
+        console.log(`   Password: ${SUPERADMIN_PASSWORD}`);
+      }
+    } else {
+      console.log(`   Password: ${SUPERADMIN_PASSWORD}`);
+      console.log('   ⚠️  No RESEND_API_KEY set — could not email credentials.');
+    }
     console.log('\n   ⚠️  Change this password after first login!');
   } else {
     console.log('   Password: (existing — unchanged)');

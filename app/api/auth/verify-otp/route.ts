@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { UserType } from '@/lib/types';
 import { getOTPData, deleteOTPData, updateOTPAttempts, MAX_OTP_ATTEMPTS } from '@/lib/otp-utils';
+import { sendNotificationEmail } from '@/lib/notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -73,18 +75,32 @@ export async function POST(request: NextRequest) {
     
     const supabase = await createClient();
 
-    // Create user with Supabase Auth (skip email verification since OTP verified)
-    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+    // Use service-role client to create user with email already confirmed
+    // (since we verified via OTP, no need for Supabase's own email confirmation)
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) {
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
+    const adminSupabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    // Create user via admin API — email_confirm: true skips Supabase's own confirmation email
+    const { data: authData, error: signUpError } = await adminSupabase.auth.admin.createUser({
       email,
       password,
-      options: {
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-          full_name: `${firstName} ${lastName}`,
-          role: UserType.MAKER,
-          email_verified: true, // Mark as verified since OTP was verified
-        },
+      email_confirm: true,
+      user_metadata: {
+        first_name: firstName,
+        last_name: lastName,
+        full_name: `${firstName} ${lastName}`,
+        role: UserType.MAKER,
       },
     });
 
@@ -97,6 +113,17 @@ export async function POST(request: NextRequest) {
 
     // Clean up OTP cookie
     await deleteOTPData();
+
+    // Send welcome email (fire and forget — don't block sign-in)
+    sendNotificationEmail(
+      email,
+      firstName,
+      'Welcome to SecureControl — Registration Successful',
+      `Congratulations! Your account has been successfully created and verified.<br><br>
+       <strong>Next step:</strong> Complete your KYC onboarding to start using the banking system. 
+       You will be guided through the KYC form after logging in.<br><br>
+       If you have any questions, please contact your system administrator.`
+    ).catch((err) => console.error('[VERIFY-OTP] Welcome email error:', err));
 
     // Sign in the user immediately after registration
     const { error: signInError } = await supabase.auth.signInWithPassword({

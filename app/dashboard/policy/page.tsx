@@ -1,6 +1,8 @@
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PolicyRulesManager } from '@/components/dashboard/policy-rules-manager';
 import { PolicyRulesSkeleton } from '@/components/dashboard/skeletons';

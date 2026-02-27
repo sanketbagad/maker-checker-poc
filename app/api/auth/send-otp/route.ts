@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { setOTPData, generateOTP, OTP_EXPIRY_MS } from '@/lib/otp-utils';
+import { sendOTPEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,18 +45,25 @@ export async function POST(request: NextRequest) {
       email: email.toLowerCase(),
     });
 
-    // In production, send OTP via email service (SendGrid, AWS SES, etc.)
-    // For demo, we'll log it to console and return it in development
-    console.log(`[OTP] Email: ${email}, OTP: ${otp}`);
+    // Send OTP via Resend email
+    const emailResult = await sendOTPEmail({
+      to: email.toLowerCase(),
+      firstName,
+      otp,
+      expiresInMinutes: Math.floor(OTP_EXPIRY_MS / 60000),
+    });
 
-    // In development, return OTP for testing
-    const isDev = process.env.NODE_ENV === 'development';
+    if (!emailResult.success) {
+      return NextResponse.json(
+        { error: 'Failed to send OTP email. Please try again.' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
       message: 'OTP sent successfully to your email',
-      expiresIn: Math.floor(OTP_EXPIRY_MS / 1000), // seconds
-      ...(isDev && { devOtp: otp }), // Only in development for testing
+      expiresIn: Math.floor(OTP_EXPIRY_MS / 1000),
     });
   } catch (error) {
     console.error('Send OTP error:', error);

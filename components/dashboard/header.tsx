@@ -13,7 +13,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Bell, LogOut, Menu, User, Settings } from 'lucide-react';
+import { LogOut, Menu, User, Settings } from 'lucide-react';
+import { NotificationDropdown } from '@/components/dashboard/notification-dropdown';
 
 interface HeaderProps {
   profile: {
@@ -46,11 +47,7 @@ export function DashboardHeader({ profile }: HeaderProps) {
         {profile.role}
       </Badge>
 
-      <Button variant="ghost" size="icon" className="relative">
-        <Bell className="h-5 w-5" />
-        <span className="sr-only">Notifications</span>
-        <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
-      </Button>
+      <NotificationDropdown userId={profile.id} />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

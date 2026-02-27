@@ -148,6 +148,24 @@ export async function POST(request: NextRequest) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
+    // Send credentials email FIRST — only create the user if email delivery succeeds
+    const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/login`;
+    const emailResult = await sendCredentialsEmail({
+      to: email.toLowerCase(),
+      fullName: full_name,
+      role,
+      temporaryPassword,
+      loginUrl,
+    });
+
+    if (!emailResult.success) {
+      return NextResponse.json(
+        { error: `Failed to send credentials email: ${emailResult.error || 'Unknown error'}. User was not created.` },
+        { status: 500 }
+      );
+    }
+
+    // Email sent successfully — now create the user
     const { data: newUser, error: createError } = await adminSupabase.auth.admin.createUser({
       email: email.toLowerCase(),
       password: temporaryPassword,
@@ -174,16 +192,6 @@ export async function POST(request: NextRequest) {
       .update({ role, full_name })
       .eq('id', newUser.user.id);
 
-    // Send credentials email
-    const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/login`;
-    const emailResult = await sendCredentialsEmail({
-      to: email.toLowerCase(),
-      fullName: full_name,
-      role,
-      temporaryPassword,
-      loginUrl,
-    });
-
     // Create audit log
     await supabase.from(TABLES.AUDIT_LOGS).insert({
       user_id: adminUser!.id,
@@ -194,25 +202,19 @@ export async function POST(request: NextRequest) {
         email: email.toLowerCase(),
         full_name,
         role,
-        email_sent: emailResult.success,
+        email_sent: true,
       },
     });
 
     return NextResponse.json({
       success: true,
-      message: `${role.charAt(0).toUpperCase() + role.slice(1)} user created successfully.${
-        emailResult.success
-          ? ' Credentials have been sent via email.'
-          : ' Warning: Email delivery failed — share credentials manually.'
-      }`,
+      message: `${role.charAt(0).toUpperCase() + role.slice(1)} user created successfully. Credentials have been sent via email.`,
       data: {
         id: newUser.user.id,
         email: email.toLowerCase(),
         full_name,
         role,
-        email_sent: emailResult.success,
-        // In dev mode, return the password for testing
-        ...(process.env.NODE_ENV === 'development' && { temporaryPassword }),
+        email_sent: true,
       },
     });
   } catch (err) {

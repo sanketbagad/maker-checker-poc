@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { TABLES, KYC_STATUS } from '@/lib/constants';
+import { notifyCheckers } from '@/lib/notifications';
 
 export async function POST(request: Request) {
   try {
@@ -116,6 +118,35 @@ export async function POST(request: Request) {
       entity_id: kycApplication.id,
       new_values: { kyc_status: KYC_STATUS.PENDING },
     });
+
+    // Notify all checkers / admins — in-app + email push notification
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (serviceRoleKey) {
+      const adminSupabase = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        serviceRoleKey,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+      );
+
+      const applicantName = `${body.first_name} ${body.last_name}`;
+      const appId = kycApplication.application_id || kycApplication.id;
+
+      // Send in-app + email notifications to checkers
+      try {
+        const result = await notifyCheckers(adminSupabase, {
+          title: 'New KYC Application Submitted',
+          message: `${applicantName} has submitted a KYC application (${appId}). Please review it at your earliest convenience.`,
+          type: 'kyc',
+          entityType: 'kyc_application',
+          entityId: kycApplication.id,
+          emailSubject: `New KYC Application — ${applicantName} (${appId})`,
+          emailBody: `A new KYC application has been submitted by <strong>${applicantName}</strong> (Application ID: <strong>${appId}</strong>).<br><br>Please log in to the SecureControl dashboard to review and take action on this application.`,
+        });
+        console.log(`[KYC SUBMIT] Notified ${result.notified} checkers, ${result.emailsSent} emails sent`);
+      } catch (err) {
+        console.error('[KYC SUBMIT] Notification error:', err);
+      }
+    }
 
     return NextResponse.json({
       success: true,

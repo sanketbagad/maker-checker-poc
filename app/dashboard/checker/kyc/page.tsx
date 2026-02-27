@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { TABLES, KYC_STATUS } from '@/lib/constants';
 import KycReviewClient from './kyc-review-client'
 
+export const dynamic = 'force-dynamic';
+
 async function getKycStats(supabase: Awaited<ReturnType<typeof createClient>>) {
   const [
     { count: pendingCount },

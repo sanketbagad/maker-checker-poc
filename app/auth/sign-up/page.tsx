@@ -22,7 +22,6 @@ export default function SignUpPage() {
   const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
-  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [canResend, setCanResend] = useState(false);
 
@@ -54,11 +53,6 @@ export default function SignUpPage() {
         setError(data.error || 'Failed to send OTP');
         setIsLoading(false);
         return;
-      }
-
-      // In development, show the OTP for testing
-      if (data.devOtp) {
-        setDevOtp(data.devOtp);
       }
 
       setStep('otp');
@@ -267,14 +261,6 @@ export default function SignUpPage() {
                   </div>
                 )}
 
-                {/* Dev mode OTP display */}
-                {devOtp && (
-                  <div className="p-3 text-sm bg-yellow-500/10 border border-yellow-500/20 rounded-md">
-                    <p className="font-medium text-yellow-600 dark:text-yellow-400">Development Mode</p>
-                    <p className="text-muted-foreground">Your OTP is: <span className="font-mono font-bold">{devOtp}</span></p>
-                  </div>
-                )}
-                
                 <div className="flex flex-col items-center gap-4">
                   <InputOTP
                     maxLength={6}
